@@ -1,0 +1,139 @@
+@extends('admin.includes.layout')
+
+@section('content')
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="header-icon"><i class="fa fa-cube"></i></div>
+    <div class="header-title">
+      <h1>{{ __('messages.packages') }}</h1>
+      <small>{{ __('messages.packages_table') }}</small>
+      <ol class="breadcrumb hidden-xs">
+        <li><a href="{{ route('dashboard') }}"><i class="pe-7s-home"></i> {{ __('messages.home') }}</a></li>
+        <li class="active">{{ __('messages.packages') }}</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="row">
+      <div class="col-sm-12">
+        <div class="panel panel-bd lobidrag">
+          <div class="panel-heading">
+            <div class="btn-group">
+              <a class="btn btn-primary" href="{{ route('packages.create') }}">
+                <i class="fa fa-plus"></i>{{ __('messages.add_package') }}
+              </a>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="row panel-header mb-3">
+              <div class="col-sm-4">
+                <label>{{ __('messages.display') }}
+                  <select id="recordsPerPage" onchange="fetchData(1)">
+                    <option value="1">1</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select> {{ __('messages.records_per_page') }}
+                </label>
+              </div>
+              <div class="col-sm-4 text-center"></div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input type="search" id="searchInput" class="form-control" placeholder="Search..">
+                  <span class="input-group-btn">
+                    <button class="btn btn-primary" type="button"><i class="fa fa-search"></i></button>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>{{ __('messages.name') }}</th>
+                    <th>{{ __('messages.price') }}</th>
+                    <!--<th>{{ __('messages.LYD price') }}</th>-->
+                    <th>{{ __('messages.duration_days') }}</th>
+                    <th>{{ __('messages.signal_limit') }}</th>
+                    <th>{{ __('messages.status') }}</th>
+                    <th class="no-print">{{ __('messages.action') }}</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  @section('tableBody')
+                  @forelse($packages as $package)
+                  <tr>
+                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $package->name }}</td>
+                    <td>${{ rtrim(rtrim(number_format($package->price, 2, '.', ''), '0'), '.') }}</td>
+                        <!--<td>{{ rtrim(rtrim(number_format($package->lyd_price, 2, '.', ''), '0'), '.') }}</td>-->
+
+                    <td>{{ $package->duration_days }}</td>
+                    <td>{{ $package->signal_limit ?? 'Unlimited' }}</td>
+                    <td>{{ ucfirst($package->status) }}</td>
+                    <td class="no-print">
+                      <a href="{{ route('packages.edit', $package->id) }}">
+                        <i class="fa fa-pencil" style="color:#007BFF;"></i>
+                      </a> |
+                      <form action="{{ route('packages.destroy', $package->id) }}" method="POST" style="display:inline;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" onclick="return confirm('Are you sure?')" style="border:none;background:none;padding:0;">
+                          <i class="fa fa-trash-o" style="color:red;"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                  @empty
+                  <tr>
+                    <td colspan="7">{{ __('messages.no_records_found') }}</td>
+                  </tr>
+                  @endforelse
+                  @show
+                </tbody>
+              </table>
+
+              <div class="d-flex justify-content-end" id="paginationLinks">
+                {{ $packages->links() }}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  function fetchData(page = 1) {
+    const query = document.getElementById('searchInput').value;
+    const perPage = document.getElementById('recordsPerPage').value;
+
+    fetch(`{{ route('packages.index') }}?page=${page}&query=${query}&perPage=${perPage}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.text())
+    .then(data => { document.getElementById('tableBody').innerHTML = data; })
+    .catch(error => console.error(error));
+  }
+
+  document.getElementById('searchInput').addEventListener('keyup', () => fetchData(1));
+  document.querySelector('.input-group-btn button').addEventListener('click', () => fetchData(1));
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.pagination a')) {
+      e.preventDefault();
+      const page = new URL(e.target.closest('a').href).searchParams.get('page');
+      fetchData(page);
+    }
+  });
+</script>
+@endsection
