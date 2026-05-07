@@ -50,11 +50,17 @@ class Invoice extends Model
     /**
      * Scope for subscriptions expiring soon (within 3 days)
      */
+    // public function scopeExpiringSoon($query, $days = 3)
+    // {
+    //     return $query->where('end_date', '<=', now()->addDays($days))
+    //         ->where('end_date', '>=', now())
+    //         ->where('warning_notification_sent', false);
+    // }
     public function scopeExpiringSoon($query, $days = 3)
     {
-        return $query->where('end_date', '<=', now()->addDays($days))
-                    ->where('end_date', '>=', now())
-                    ->where('warning_notification_sent', false);
+        return $query->whereDate('end_date', '<=', now()->addDays($days))
+            ->whereDate('end_date', '>=', now())
+            ->where('warning_notification_sent', false);
     }
 
     /**
@@ -62,8 +68,8 @@ class Invoice extends Model
      */
     public function scopeExpired($query)
     {
-        return $query->where('end_date', '<', now())
-                    ->where('expiration_notification_sent', false);
+        return $query->whereDate('end_date', '<=', now())
+            ->where('expiration_notification_sent', false);
     }
 
     /**
@@ -71,9 +77,9 @@ class Invoice extends Model
      */
     public function isExpiringSoon($days = 3)
     {
-        return $this->end_date <= now()->addDays($days) 
-               && $this->end_date >= now()
-               && !$this->warning_notification_sent;
+        return $this->end_date <= now()->addDays($days)
+            && $this->end_date >= now()
+            && !$this->warning_notification_sent;
     }
 
     /**
