@@ -23,11 +23,11 @@ class NotificationController extends Controller
 
         $notifications = Notification::when($query, function ($q) use ($query) {
             $q->where('title', 'like', "%$query%")
-              ->orWhere('description', 'like', "%$query%");
+                ->orWhere('description', 'like', "%$query%");
         })
-        ->orderBy('id', 'desc')
-        ->paginate($perPage)
-        ->appends(['query' => $query, 'perPage' => $perPage]);
+            ->orderBy('id', 'desc')
+            ->paginate($perPage)
+            ->appends(['query' => $query, 'perPage' => $perPage]);
 
         if ($request->ajax()) {
             return view('admin.notifications.partials.table-body', compact('notifications'))->render();
@@ -97,7 +97,6 @@ class NotificationController extends Controller
 
             return redirect()->route('notifications.index')
                 ->with('success', 'Notification sent successfully!');
-
         } catch (\Exception $e) {
             Log::error('Failed to send notification', [
                 'error' => $e->getMessage(),
@@ -149,12 +148,12 @@ class NotificationController extends Controller
 
         $users = User::where(function ($q) use ($query) {
             $q->where('f_name', 'like', "%$query%")
-              ->orWhere('last_name', 'like', "%$query%")
-              ->orWhere('email', 'like', "%$query%");
+                ->orWhere('last_name', 'like', "%$query%")
+                ->orWhere('email', 'like', "%$query%");
         })
-        ->select('id', 'f_name', 'last_name', 'email', 'type')
-        ->limit(10)
-        ->get();
+            ->select('id', 'f_name', 'last_name', 'email', 'type')
+            ->limit(10)
+            ->get();
 
         return response()->json($users->map(fn($u) => [
             'id'    => $u->id,
