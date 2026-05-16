@@ -69,12 +69,24 @@ class NotificationController extends Controller
                 if (empty($targetUserIds)) {
                     return back()->withErrors(['target_users' => 'Select at least one user.'])->withInput();
                 }
+
                 $existing = User::whereIn('id', $targetUserIds)->pluck('id')->toArray();
                 $invalid = array_diff($targetUserIds, $existing);
                 if (!empty($invalid)) {
                     return back()->withErrors(['target_users' => 'Invalid users: ' . implode(', ', $invalid)])->withInput();
                 }
+
+                $expired = User::whereIn('id', $targetUserIds)
+                    ->where('type', 'simple_user')
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($expired)) {
+                    return back()->withErrors(['error' => 'This user have no subscription'])->withInput();
+                }
             }
+
+            // allow bulk sending to non_subscribers (simple_user)
 
             // 4. Create notification
             $notification = Notification::create([
@@ -151,6 +163,7 @@ class NotificationController extends Controller
                 ->orWhere('last_name', 'like', "%$query%")
                 ->orWhere('email', 'like', "%$query%");
         })
+            ->where('type', '!=', 'simple_user')
             ->select('id', 'f_name', 'last_name', 'email', 'type')
             ->limit(10)
             ->get();

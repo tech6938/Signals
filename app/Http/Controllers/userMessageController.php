@@ -8,7 +8,6 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\FcmService;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 
 
@@ -61,7 +60,7 @@ class userMessageController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-     
+
       public function store(Request $request)
     {
         // dd($request->all());
@@ -85,7 +84,7 @@ class userMessageController extends Controller
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('analyses', 'public');
         }
-        
+
         $targetUserIds = [];
 
 $rawTargetUsers = $request->input('target_users');
@@ -108,10 +107,23 @@ $message = userMessages::create([
     'package_id'        => $request->notification_send_to === 'package_subscribers' ? $request->package_id : null,
 ]);
 
-        
 
-        // Send notification if requested
+
+        // Check expired user selection before sending notifications
         if ($request->send_notification == '1') {
+            // allow bulk sending to non_subscribers (simple_user)
+
+            if ($request->notification_send_to === 'individual' && !empty($targetUserIds)) {
+                $expired = User::whereIn('id', $targetUserIds)
+                    ->where('type', 'simple_user')
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($expired)) {
+                    return back()->withErrors(['error' => 'This user have no subscription'])->withInput();
+                }
+            }
+
             $this->sendNotificationFromMessage($message, $request, $imagePath);
         }
 
@@ -129,7 +141,7 @@ $message = userMessages::create([
     //     //     'value_id' => 'required_if:notification_send_to,value_subscribers|nullable|exists:values,id',
     //     //     'image' => 'nullable|image|max:2048',
     //     // ]);
-        
+
     //     $request->validate([
     //         'title' => 'required|string|max:255',
     //         'description' => 'required|string',
@@ -245,7 +257,7 @@ $message = userMessages::create([
     //             // Check if all user IDs exist
     //             $existingUsers = User::whereIn('id', $targetUsers)->pluck('id')->toArray();
     //             $invalidUsers = array_diff($targetUsers, $existingUsers);
-                
+
     //             if (!empty($invalidUsers)) {
     //                 Log::warning('Invalid user IDs for notification: ' . implode(', ', $invalidUsers));
     //                 return;
@@ -337,15 +349,15 @@ $message = userMessages::create([
     // private function sendNotification(Notification $notification)
     // {
     //     $users = $notification->getTargetUsers();
-    
+
     //     if ($users->isEmpty()) {
     //         Log::warning('No target users found for notification', ['notification_id' => $notification->id]);
     //         return;
     //     }
-    
+
     //     $fcmService = app(FcmService::class);
     //     $sentCount = 0;
-    
+
     //     foreach ($users as $user) {
     //         try {
     //             // Track notification for this user
@@ -353,7 +365,7 @@ $message = userMessages::create([
     //                 'notification_id' => $notification->id,
     //                 'user_id' => $user->id,
     //             ]);
-    
+
     //             if (!empty($user->fcm_token)) {
     //                 // Send notification via existing method sendToTokens()
     //                 $fcmService->sendToTokens(
@@ -371,13 +383,13 @@ $message = userMessages::create([
     //                         )->image_path,
     //                     ]
     //                 );
-    
+
     //                 // Mark as sent
     //                 $userNotification->update([
     //                     'is_sent' => true,
     //                     'sent_at' => now(),
     //                 ]);
-    
+
     //                 $sentCount++;
     //             }
     //         } catch (\Exception $e) {
@@ -388,20 +400,20 @@ $message = userMessages::create([
     //             ]);
     //         }
     //     }
-    
+
     //     // Update main notification stats
     //     $notification->update([
     //         'sent' => $sentCount > 0,
     //         'sent_at' => now(),
     //         'sent_count' => $sentCount,
     //     ]);
-    
+
     //     Log::info('Notification sending completed', [
     //         'notification_id' => $notification->id,
     //         'sent_count' => $sentCount,
     //     ]);
     // }
-    
+
     //   private function sendNotificationFromMessage(userMessages $message, Request $request, $imagePath = null)
     // {
     //     try {
@@ -456,7 +468,7 @@ $message = userMessages::create([
     //         ]);
     //     }
     // }
-    
+
     private function sendNotificationFromMessage(userMessages $message, Request $request, $imagePath = null)
 {
     try {
@@ -589,7 +601,7 @@ $message = userMessages::create([
     //         'sent_count' => $sentCount,
     //     ]);
     // }
-    
+
     // Inside your userMessageController.php
 
 
